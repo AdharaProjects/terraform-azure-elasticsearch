@@ -1,5 +1,5 @@
 data "template_file" "singlenode_userdata_script" {
-  template = file("${path.module}/../templates/user_data.sh")
+  template = "${file("${path.module}/../templates/user_data.elasticsearch.sh")}"
 
   vars = {
     volume_name             = ""
@@ -18,6 +18,9 @@ data "template_file" "singlenode_userdata_script" {
     security_enabled        = var.security_enabled
     monitoring_enabled      = var.monitoring_enabled
     xpack_monitoring_host   = var.xpack_monitoring_host
+    license_type            = var.xpack_license_type
+    masters_count           = var.masters_count
+    datas_count             = var.datas_count
   }
 }
 
@@ -40,7 +43,7 @@ resource "azurerm_network_interface" "single-node" {
 
   ip_configuration {
     name                          = "es-${var.es_cluster}-singlenode-ip"
-    subnet_id                     = azurerm_subnet.elasticsearch_subnet.id
+    subnet_id                     = azurerm_subnet.elasticsearch_subnet[0].id
     private_ip_address_allocation = "dynamic"
     public_ip_address_id          = azurerm_public_ip.single-node[count.index].id
   }
@@ -70,7 +73,7 @@ resource "azurerm_virtual_machine" "single-node" {
   os_profile {
     computer_name = "es-${var.es_cluster}-singlenode"
     admin_username = "ubuntu"
-    admin_password = random_string.vm-login-password.result
+    admin_password = var.use_ssh_key ? null : random_string.vm-login-password[0].result
     custom_data = data.template_file.singlenode_userdata_script.rendered
   }
 
@@ -79,7 +82,7 @@ resource "azurerm_virtual_machine" "single-node" {
 
     ssh_keys {
       path     = "/home/ubuntu/.ssh/authorized_keys"
-      key_data = file(var.key_path)
+      key_data = var.ssh_key
     }
   }
 }
