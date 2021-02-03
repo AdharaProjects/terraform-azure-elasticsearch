@@ -3,35 +3,13 @@ variable "location" {
   default = "East US 2"
 }
 
-variable "client_id" {
-  type = string
-}
-
-variable "client_secret" {
-  type = string
-}
-
-variable "subscription_id" {
-  type = string
-}
-
-variable "tenant_id" {
-  type = string
-}
-
 variable "resource_group_name" {
   type = string
 }
 
-
 variable "es_cluster" {
   description = "Name of the elasticsearch cluster, used in node discovery"
   default = "my-cluster"
-}
-
-variable "key_path" {
-  description = "Key name to be used with the launched instances."
-  default = "~/.ssh/id_rsa.pub"
 }
 
 variable "environment" {
@@ -58,7 +36,7 @@ variable "elasticsearch_volume_size" {
   type = string
   default = "100" # gb
 }
-
+  
 variable "use_instance_storage" {
   default = true
 }
@@ -118,5 +96,29 @@ variable "monitoring_enabled" {
 
 variable "xpack_monitoring_host" {
   description = "ES host to send monitoring data"
-  default     = "self"
+  default = "self"
+}
+
+variable "xpack_license_type" {
+  default = "basic"
+}
+
+variable "use_ssh_key" {
+  default = false
+}
+
+variable "ssh_key" {
+  type = string
+}
+
+variable "create_network" {
+  default = "true"
+}
+
+variable "subnet_id" {
+  default = ""
+}
+
+variable "image_resource_group_name" {
+  type = string
 }

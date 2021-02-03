@@ -12,14 +12,16 @@ node.data: ${data}
 node.ingest: ${data}
 xpack.security.enabled: ${security_enabled}
 xpack.monitoring.enabled: ${monitoring_enabled}
+xpack.license.self_generated.type: ${license_type}
 path.data: ${elasticsearch_data_dir}
 path.logs: ${elasticsearch_logs_dir}
 EOF
 
 if [ "${master}" == "true"  ]; then
-    cat <<'EOF' >>/etc/elasticsearch/elasticsearch.yml
-cluster.initial_master_nodes: ["${es_cluster}-master000000", "${es_cluster}-master000001", "${es_cluster}-master000002"]
-EOF
+echo "cluster.initial_master_nodes:" >> /etc/elasticsearch/elasticsearch.yml
+for i in $(seq -f "%06g" 0 $((${masters_count}-1))); do
+    echo "- ${es_cluster}-master$i" >> /etc/elasticsearch/elasticsearch.yml
+done
 fi
 
 if [ "${master}" == "true"  ] && [ "${data}" == "true" ]; then
@@ -42,16 +44,13 @@ network.host: _site_,localhost
 # predictable subnet addresses starting at 10.1.0.5.
 EOF
 
-# avoiding discovery noise in single-node scenario
-if [ "${master}" == "true"  ] && [ "${data}" == "true" ]; then
-    cat <<'EOF' >>/etc/elasticsearch/elasticsearch.yml
-discovery.seed_hosts: ["${es_cluster}-master000000", "${es_cluster}-data000000"]
-EOF
-else
-    cat <<'EOF' >>/etc/elasticsearch/elasticsearch.yml
-discovery.seed_hosts: ["${es_cluster}-master000000", "${es_cluster}-master000001", "${es_cluster}-master000002", "${es_cluster}-data000000", "${es_cluster}-data000001"]
-EOF
-fi
+echo "discovery.seed_hosts:" >> /etc/elasticsearch/elasticsearch.yml
+for i in $(seq -f "%06g" 0 $((${masters_count}-1))); do
+    echo "- ${es_cluster}-master$i" >> /etc/elasticsearch/elasticsearch.yml
+done
+for i in $(seq -f "%06g" 0 $((${datas_count}-1))); do
+    echo "- ${es_cluster}-data$i" >> /etc/elasticsearch/elasticsearch.yml
+done
 
 cat <<'EOF' >>/etc/security/limits.conf
 
@@ -114,15 +113,6 @@ if [ "${bootstrap_node}" == "true"  ]; then
     done
     shutdown -h now
 else
-    # Setup x-pack security also on Kibana configs where applicable
-    if [ -f "/etc/kibana/kibana.yml" ]; then
-        echo "xpack.security.enabled: ${security_enabled}" | sudo tee -a /etc/kibana/kibana.yml
-        echo "xpack.monitoring.enabled: ${monitoring_enabled}" | sudo tee -a /etc/kibana/kibana.yml
-        systemctl daemon-reload
-        systemctl enable kibana.service
-        sudo service kibana restart
-    fi
-
     sleep 60
     if [ $(systemctl is-failed elasticsearch.service) == "failed" ]; then
         echo "Elasticsearch unit failed to start"

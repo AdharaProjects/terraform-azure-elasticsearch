@@ -45,4 +45,5 @@ Building the image is done using the following commands:
 
 ```bash
 packer build -only=azure-arm -var-file=variables.json elasticsearch7-node.packer.json
+packer build -only=azure-arm -var-file=variables.json kibana7-node.packer.json
 ```

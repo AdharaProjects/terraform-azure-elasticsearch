@@ -18,6 +18,8 @@ else
     apt-get install kibana=$ES_VERSION
 fi
 
+mv kibana.yml /etc/kibana/kibana.yml
+
 # This needs to be here explicitly because of a long first-initialization time of Kibana
 systemctl daemon-reload
 systemctl enable kibana.service
